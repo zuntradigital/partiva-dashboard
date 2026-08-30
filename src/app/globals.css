@@ -1,0 +1,230 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-cairo), "Segoe UI", sans-serif;
+
+  /* Dark palette (default -- no [data-theme] attribute needed). Softened to
+     a neutral charcoal instead of the previous navy-black, per design intent:
+     no pure black, no harsh contrast. Brand/status colors are shared with
+     the light theme below and left as-is (already read fine on both). */
+  --color-background: #17181d;
+  --color-background-soft: #1b1c22;
+  --color-surface: #202127;
+  --color-surface-soft: #26272e;
+  --color-surface-hover: #2c2d35;
+  --color-border: #34353d;
+  --color-border-soft: #2a2b32;
+
+  --color-foreground: #e9eaee;
+  --color-muted: #9a9ea8;
+  --color-muted-soft: #6b6f79;
+
+  --color-primary: #4f6df5;
+  --color-primary-soft: #3a4dc7;
+  --color-secondary: #8b5cf6;
+  --color-accent: #22d3ee;
+
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #f43f5e;
+  --color-info: #3b82f6;
+
+  --shadow-glow: 0 0 0 1px rgba(79, 109, 245, 0.15), 0 8px 24px -8px rgba(79, 109, 245, 0.35);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+/* Light theme -- opt-in via [data-theme="light"] on <html>, toggled and
+   persisted by useTheme() (src/lib/theme.ts) and applied before hydration by
+   the inline script in layout.tsx so there's no flash of the wrong theme.
+   Every component already reads colors through these same CSS variables (no
+   component-level dark:/light: classes anywhere), so overriding them here is
+   the only change needed for the whole Dashboard to re-theme. */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --color-background: #f5f6f8;
+  --color-background-soft: #eef0f3;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f8f9fb;
+  --color-surface-hover: #eef0f3;
+  --color-border: #e2e5eb;
+  --color-border-soft: #ecedf1;
+
+  --color-foreground: #1a1d29;
+  --color-muted: #5b606d;
+  --color-muted-soft: #8b909c;
+}
+
+/* Dark Mode only: the Sidebar reads a touch lighter than card surfaces
+   (reusing the existing --color-surface-soft token, still the same charcoal
+   family) so it's clearly distinguishable from the page background and the
+   logo has better contrast. Light Mode and every other surface (including
+   the Navbar) are untouched -- aside is the Sidebar's only root element. */
+:root:not([data-theme="light"]) aside.bg-surface {
+  background-color: var(--color-surface-soft);
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+html,
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
+
+body {
+  font-feature-settings: "ss01";
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-surface-hover);
+}
+
+.bg-gradient-brand {
+  background-image: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+}
+
+.text-gradient-brand {
+  background-image: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.animate-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-surface-soft) 0px,
+    var(--color-surface-hover) 40px,
+    var(--color-surface-soft) 80px
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* Subtle, fast entrance animations -- transform/opacity only so nothing
+   shifts layout or costs a reflow. Kept short (150-220ms) per design intent. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in {
+  animation: fade-in 0.22s ease-out both;
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-scale-in {
+  animation: scale-in 0.18s ease-out both;
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-overlay-in {
+  animation: overlay-in 0.18s ease-out both;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-toast-in {
+  animation: toast-in 0.2s ease-out both;
+}
+
+/* Sweeps a conic-gradient mask from 0deg to 360deg to reveal the donut chart
+   like a clock hand, instead of just fading/popping it in -- mask-image is
+   compositor-only (no layout/paint cost) like the transform/opacity
+   animations above. Plain custom properties don't interpolate (a gradient
+   angle animation would just jump straight to its end value partway
+   through), so --donut-sweep is registered as a real <angle> via @property
+   to make it animate smoothly; unsupporting browsers fall back to an
+   abrupt-but-still-correct reveal instead of a broken chart. */
+@property --donut-sweep {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes donut-draw {
+  from {
+    --donut-sweep: 0deg;
+  }
+  to {
+    --donut-sweep: 360deg;
+  }
+}
+.animate-donut-draw {
+  animation: donut-draw 0.7s ease-out both;
+  -webkit-mask-image: conic-gradient(#000 var(--donut-sweep), transparent var(--donut-sweep));
+  mask-image: conic-gradient(#000 var(--donut-sweep), transparent var(--donut-sweep));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-overlay-in,
+  .animate-toast-in,
+  .animate-donut-draw {
+    animation: none;
+  }
+  /* Without this, turning the animation off would leave --donut-sweep at its
+     0deg initial value -- fully masked/invisible -- instead of showing the
+     complete chart immediately. */
+  .animate-donut-draw {
+    --donut-sweep: 360deg;
+  }
+}
