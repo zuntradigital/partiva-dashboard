@@ -6,7 +6,7 @@ import type { Action, Resource } from "@/types";
 // were sent back to Login instead of it looking like a silent failure.
 export const SESSION_EXPIRED_FLAG = "partiva_session_expired";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000").replace(/\/+$/, "");
 
 // apiFetch sits below the component tree and can't call useLanguage(), so it
 // reads the <html lang> attribute directly -- already kept in sync with the
