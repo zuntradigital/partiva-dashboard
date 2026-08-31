@@ -3,6 +3,16 @@ import { Cairo } from "next/font/google";
 import { LanguageProvider } from "@/lib/i18n";
 import "./globals.css";
 
+// Forces every route to render per-request instead of being prerendered as
+// static HTML. Hostinger's deployment replaces the previous build's
+// /_next/static chunks in place (no old-build asset retention like Vercel),
+// so a long-cached static page (Cache-Control: s-maxage=31536000) can keep
+// referencing chunk hashes that no longer exist after the next deploy. A
+// dynamic route gets Cache-Control: private, no-cache, no-store, max-age=0,
+// must-revalidate instead, so the HTML is never cached and always reflects
+// the current deployment's chunk hashes.
+export const dynamic = "force-dynamic";
+
 const cairo = Cairo({
   variable: "--font-cairo",
   subsets: ["arabic", "latin"],
