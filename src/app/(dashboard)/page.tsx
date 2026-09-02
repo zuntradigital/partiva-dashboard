@@ -24,7 +24,7 @@ import { roleLabel } from "@/lib/rbac";
 import type { AuditLogEntry, ContentStatus } from "@/types";
 
 const STATUS_DONUT_COLORS: Record<ContentStatus, string> = {
-  published: "#22c55e",
+  published: "#6366f1",
   draft: "#5f6883",
   review: "#f59e0b",
   approved: "#22d3ee",
@@ -113,7 +113,7 @@ export default function DashboardPage() {
               icon="blog"
               label={t("home.statArticles")}
               value={counts.articlesTotal}
-              sublabel={t("home.statArticlesSub", { ar: counts.articlesPublishedAr, en: counts.articlesPublishedEn })}
+              sublabel={t("home.statArticlesSub", { ar: counts.articlesAr, en: counts.articlesEn })}
               accent="linear-gradient(135deg,#4f6df5,#8b5cf6)"
             />
             <StatCard

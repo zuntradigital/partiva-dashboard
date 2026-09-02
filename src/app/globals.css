@@ -3,33 +3,35 @@
 @theme {
   --font-sans: var(--font-cairo), "Segoe UI", sans-serif;
 
-  /* Dark palette (default -- no [data-theme] attribute needed). Softened to
-     a neutral charcoal instead of the previous navy-black, per design intent:
-     no pure black, no harsh contrast. Brand/status colors are shared with
-     the light theme below and left as-is (already read fine on both). */
-  --color-background: #17181d;
-  --color-background-soft: #1b1c22;
-  --color-surface: #202127;
-  --color-surface-soft: #26272e;
-  --color-surface-hover: #2c2d35;
-  --color-border: #34353d;
-  --color-border-soft: #2a2b32;
+  /* Dark palette (default -- no [data-theme] attribute needed). Navy-tinted
+     to match the public website's dark theme (Hero/card backgrounds are the
+     same #0a1229/#0d1733), with a blue/purple brand pair instead of the
+     previous neutral-charcoal + cyan-accent scheme. Values only -- every
+     component already reads colors through these same variables, so this
+     is the only place the Dashboard's palette needs to change. */
+  --color-background: #0a1229;
+  --color-background-soft: #0c1530;
+  --color-surface: #0d1733;
+  --color-surface-soft: #10193a;
+  --color-surface-hover: #142050;
+  --color-border: #24304f;
+  --color-border-soft: #1a2340;
 
   --color-foreground: #e9eaee;
-  --color-muted: #9a9ea8;
-  --color-muted-soft: #6b6f79;
+  --color-muted: #99a2c2;
+  --color-muted-soft: #6b7290;
 
-  --color-primary: #4f6df5;
-  --color-primary-soft: #3a4dc7;
-  --color-secondary: #8b5cf6;
-  --color-accent: #22d3ee;
+  --color-primary: #2563eb;
+  --color-primary-soft: #1d4ed8;
+  --color-secondary: #a855f7;
+  --color-accent: #60a5fa;
 
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --color-danger: #f43f5e;
   --color-info: #3b82f6;
 
-  --shadow-glow: 0 0 0 1px rgba(79, 109, 245, 0.15), 0 8px 24px -8px rgba(79, 109, 245, 0.35);
+  --shadow-glow: 0 0 0 1px rgba(37, 99, 235, 0.15), 0 8px 24px -8px rgba(37, 99, 235, 0.35);
 }
 
 :root {
@@ -45,17 +47,17 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --color-background: #f5f6f8;
-  --color-background-soft: #eef0f3;
+  --color-background: #f5f6fa;
+  --color-background-soft: #eef0f7;
   --color-surface: #ffffff;
-  --color-surface-soft: #f8f9fb;
-  --color-surface-hover: #eef0f3;
-  --color-border: #e2e5eb;
-  --color-border-soft: #ecedf1;
+  --color-surface-soft: #f8f9fc;
+  --color-surface-hover: #eef0f7;
+  --color-border: #e0e4ee;
+  --color-border-soft: #ebeef5;
 
-  --color-foreground: #1a1d29;
-  --color-muted: #5b606d;
-  --color-muted-soft: #8b909c;
+  --color-foreground: #12162b;
+  --color-muted: #5b6178;
+  --color-muted-soft: #8b90a4;
 }
 
 /* Dark Mode only: the Sidebar reads a touch lighter than card surfaces

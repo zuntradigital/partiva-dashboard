@@ -390,6 +390,23 @@ export type PricingWorkflowAction = "submit_review" | "approve" | "reject";
 export const transitionPricingStatus = (id: number, action: PricingWorkflowAction, comment?: string) =>
   apiFetch<BackendPricingPlan>(`/api/admin/pricing/${id}/status`, { method: "PATCH", body: { action, comment } });
 
+// ---- Pricing settings (generic key/value config, e.g. commission_config) ----
+export interface CommissionTier { min: number; max: number | null; rate: number; }
+export interface CommissionConfig {
+  freePartsLimit: number;
+  freePeriodDays: number;
+  currency: string;
+  tiers: CommissionTier[];
+  headlineAr: string; headlineEn: string;
+  descriptionAr: string; descriptionEn: string;
+  disclaimerAr: string; disclaimerEn: string;
+  ctaTextAr: string; ctaTextEn: string;
+  ctaSecondaryTextAr: string; ctaSecondaryTextEn: string;
+}
+export const fetchPricingSettings = <T = unknown>(key: string) => apiFetch<T | null>(`/api/admin/pricing/settings/${key}`);
+export const updatePricingSettings = <T = unknown>(key: string, value: T) =>
+  apiFetch<T>(`/api/admin/pricing/settings/${key}`, { method: "PUT", body: { value } });
+
 // ---- Testimonials ----
 export interface BackendTestimonial { id:number; nameAr:string; nameEn:string|null; roleAr:string; roleEn:string|null; quoteAr:string; quoteEn:string|null; rating:number; imageSrc:string|null; displayOrder:number; active:boolean; createdAt:string; updatedAt:string; }
 export type TestimonialWritePayload = Omit<BackendTestimonial, "id" | "createdAt" | "updatedAt">;

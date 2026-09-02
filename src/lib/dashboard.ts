@@ -4,22 +4,30 @@ import { auditActionLabel } from "@/lib/status";
 import type { Lang } from "@/lib/i18n";
 
 export interface ContentCounts {
-  /** Total published language editions (an article counts once per
-   * completed locale, so a bilingual article contributes 2). */
+  /** Total language editions with any content started -- an article with
+   * both an Arabic and an English draft counts twice, one with only Arabic
+   * counts once. Matches the "9 Arabic + 9 English = 18" reading of "how
+   * many articles do I have", not the row count in the articles table. */
   articlesTotal: number;
-  articlesPublishedAr: number;
-  articlesPublishedEn: number;
+  articlesAr: number;
+  articlesEn: number;
   pagesTotal: number;
   pagesHidden: number;
 }
 
 export function getContentCounts(articles: BackendArticle[], pages: BackendPage[]): ContentCounts {
-  const articlesPublishedAr = articles.filter((a) => a.status === "published" && a.translationStatus.ar === "complete").length;
-  const articlesPublishedEn = articles.filter((a) => a.status === "published" && a.translationStatus.en === "complete").length;
+  // "سواء مكتملة أو لأ" -- complete or not still counts, so only
+  // "not_started" (no content ever entered for that language) is excluded.
+  // Previously required status === "published" && translationStatus ===
+  // "complete", which read as 0 whenever nothing was both published and
+  // fully translated even with plenty of draft/in-progress articles sitting
+  // in the list right below it.
+  const articlesAr = articles.filter((a) => a.translationStatus.ar !== "not_started").length;
+  const articlesEn = articles.filter((a) => a.translationStatus.en !== "not_started").length;
   return {
-    articlesTotal: articlesPublishedAr + articlesPublishedEn,
-    articlesPublishedAr,
-    articlesPublishedEn,
+    articlesTotal: articlesAr + articlesEn,
+    articlesAr,
+    articlesEn,
     pagesTotal: pages.length,
     pagesHidden: pages.filter((p) => !p.visible).length,
   };

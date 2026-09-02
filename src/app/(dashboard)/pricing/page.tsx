@@ -9,9 +9,12 @@ import {
   createPricingPlan,
   deletePricingPlan,
   fetchPricingPlans,
+  fetchPricingSettings,
   transitionPricingStatus,
   updatePricingPlan,
+  updatePricingSettings,
   type BackendPricingPlan,
+  type CommissionConfig,
   type PricingWritePayload,
 } from "@/lib/api";
 
@@ -44,6 +47,12 @@ export default function PricingPage() {
   const [rejecting, setRejecting] = useState(false);
   const [rejectComment, setRejectComment] = useState("");
 
+  const [commission, setCommission] = useState<CommissionConfig | null>(null);
+  const [commissionLoadError, setCommissionLoadError] = useState("");
+  const [commissionSaving, setCommissionSaving] = useState(false);
+  const [commissionNotice, setCommissionNotice] = useState("");
+  const [commissionError, setCommissionError] = useState("");
+
   const fields = [
     ["nameAr", t("pricing.fieldNameAr")],
     ["nameEn", t("pricing.fieldNameEn")],
@@ -65,6 +74,39 @@ export default function PricingPage() {
   useEffect(() => {
     void fetchPricingPlans().then(setPlans).catch((e) => setLoadError(e.message));
   }, []);
+
+  useEffect(() => {
+    void fetchPricingSettings<CommissionConfig>("commission_config")
+      .then(setCommission)
+      .catch((e) => setCommissionLoadError(e instanceof ApiError ? e.message : t("pricing.commissionLoadError")));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const saveCommission = async () => {
+    if (!commission) return;
+    setCommissionSaving(true);
+    setCommissionError("");
+    setCommissionNotice("");
+    try {
+      const saved = await updatePricingSettings("commission_config", commission);
+      setCommission(saved);
+      setCommissionNotice(t("pricing.commissionSaved"));
+    } catch (e) {
+      setCommissionError(e instanceof ApiError ? e.message : t("pricing.commissionSaveError"));
+    } finally {
+      setCommissionSaving(false);
+    }
+  };
+
+  const updateTier = (index: number, field: "min" | "max" | "rate", raw: string) => {
+    if (!commission) return;
+    const tiers = commission.tiers.map((tier, i) => {
+      if (i !== index) return tier;
+      if (field === "max") return { ...tier, max: raw.trim() === "" ? null : Number(raw) };
+      return { ...tier, [field]: Number(raw) };
+    });
+    setCommission({ ...commission, tiers });
+  };
 
   const refreshOne = (updated: BackendPricingPlan) =>
     setPlans((items) => (items ?? []).map((p) => (p.id === updated.id ? updated : p)));
@@ -138,6 +180,138 @@ export default function PricingPage() {
       />
       {notice && <p className="rounded-lg bg-success/10 p-3 text-sm text-success">{notice}</p>}
       {error && !draft && <p className="rounded-lg bg-danger/10 p-3 text-sm text-danger">{error}</p>}
+
+      <Card className="space-y-5 p-5">
+        <div>
+          <h2 className="font-bold">{t("pricing.commissionTitle")}</h2>
+          <p className="mt-1 text-sm text-muted">{t("pricing.commissionDescription")}</p>
+        </div>
+
+        {commission === null ? (
+          commissionLoadError ? (
+            <EmptyState icon="alert" title={t("pricing.commissionLoadError")} description={commissionLoadError} />
+          ) : (
+            <div className="space-y-3">
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          )
+        ) : (
+          <div className="space-y-5">
+            {commissionNotice && <p className="rounded-lg bg-success/10 p-3 text-sm text-success">{commissionNotice}</p>}
+            {commissionError && <p className="rounded-lg bg-danger/10 p-3 text-sm text-danger">{commissionError}</p>}
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <label className="text-sm font-medium text-foreground">
+                {t("pricing.freePartsLimit")}
+                <input
+                  type="number"
+                  disabled={!editable || commissionSaving}
+                  className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:bg-background-soft"
+                  value={commission.freePartsLimit}
+                  onChange={(e) => setCommission({ ...commission, freePartsLimit: Number(e.target.value) })}
+                />
+              </label>
+              <label className="text-sm font-medium text-foreground">
+                {t("pricing.freePeriodDays")}
+                <input
+                  type="number"
+                  disabled={!editable || commissionSaving}
+                  className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:bg-background-soft"
+                  value={commission.freePeriodDays}
+                  onChange={(e) => setCommission({ ...commission, freePeriodDays: Number(e.target.value) })}
+                />
+              </label>
+              <label className="text-sm font-medium text-foreground">
+                {t("pricing.currency")}
+                <input
+                  disabled={!editable || commissionSaving}
+                  className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:bg-background-soft"
+                  value={commission.currency}
+                  onChange={(e) => setCommission({ ...commission, currency: e.target.value })}
+                />
+              </label>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium text-foreground">{t("pricing.tiersLabel")}</p>
+              <div className="mt-2 space-y-2">
+                {commission.tiers.map((tier, i) => (
+                  <div key={i} className="grid grid-cols-1 gap-2 rounded-xl border border-border-soft bg-background-soft p-3 sm:grid-cols-3">
+                    <label className="text-xs font-medium text-muted">
+                      {t("pricing.tierMin")}
+                      <input
+                        type="number"
+                        disabled={!editable || commissionSaving}
+                        className="mt-1 w-full rounded-lg border border-border bg-background px-2.5 py-2 text-sm disabled:cursor-not-allowed"
+                        value={tier.min}
+                        onChange={(e) => updateTier(i, "min", e.target.value)}
+                      />
+                    </label>
+                    <label className="text-xs font-medium text-muted">
+                      {t("pricing.tierMax")} <span className="font-normal">({t("pricing.tierMaxUnlimited")})</span>
+                      <input
+                        type="number"
+                        disabled={!editable || commissionSaving}
+                        className="mt-1 w-full rounded-lg border border-border bg-background px-2.5 py-2 text-sm disabled:cursor-not-allowed"
+                        value={tier.max ?? ""}
+                        onChange={(e) => updateTier(i, "max", e.target.value)}
+                      />
+                    </label>
+                    <label className="text-xs font-medium text-muted">
+                      {t("pricing.tierRate")}
+                      <input
+                        type="number"
+                        step="0.01"
+                        disabled={!editable || commissionSaving}
+                        className="mt-1 w-full rounded-lg border border-border bg-background px-2.5 py-2 text-sm disabled:cursor-not-allowed"
+                        value={tier.rate}
+                        onChange={(e) => updateTier(i, "rate", e.target.value)}
+                      />
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {(
+                [
+                  ["headlineAr", "pricing.headlineAr"],
+                  ["headlineEn", "pricing.headlineEn"],
+                  ["descriptionAr", "pricing.commissionDescriptionAr"],
+                  ["descriptionEn", "pricing.commissionDescriptionEn"],
+                  ["disclaimerAr", "pricing.disclaimerAr"],
+                  ["disclaimerEn", "pricing.disclaimerEn"],
+                  ["ctaTextAr", "pricing.ctaTextAr"],
+                  ["ctaTextEn", "pricing.ctaTextEn"],
+                  ["ctaSecondaryTextAr", "pricing.ctaSecondaryTextAr"],
+                  ["ctaSecondaryTextEn", "pricing.ctaSecondaryTextEn"],
+                ] as const
+              ).map(([key, labelKey]) => (
+                <label key={key} className="text-sm font-medium text-foreground">
+                  {t(labelKey)}
+                  <textarea
+                    disabled={!editable || commissionSaving}
+                    className="mt-1.5 min-h-20 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm disabled:cursor-not-allowed disabled:bg-background-soft"
+                    value={commission[key]}
+                    onChange={(e) => setCommission({ ...commission, [key]: e.target.value })}
+                  />
+                </label>
+              ))}
+            </div>
+
+            {editable && (
+              <div className="flex justify-end">
+                <Button onClick={saveCommission} disabled={commissionSaving}>
+                  {commissionSaving ? t("pricing.commissionSaving") : t("pricing.commissionSave")}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
 
       {plans === null ? (
         loadError ? (
