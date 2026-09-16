@@ -288,6 +288,10 @@ export interface ArticleCover {
   alt: string;
   width: number;
   height: number;
+  /** Set when this cover came from the Media Library (upload or reuse) --
+   * null for a legacy cover stored only as a raw src (still fully supported,
+   * see the backend's articles.service.ts resolveCover()). */
+  mediaId?: number | null;
 }
 
 export interface ArticleSeo {
@@ -404,8 +408,11 @@ export interface CommissionConfig {
   ctaSecondaryTextAr: string; ctaSecondaryTextEn: string;
 }
 export const fetchPricingSettings = <T = unknown>(key: string) => apiFetch<T | null>(`/api/admin/pricing/settings/${key}`);
-export const updatePricingSettings = <T = unknown>(key: string, value: T) =>
-  apiFetch<T>(`/api/admin/pricing/settings/${key}`, { method: "PUT", body: { value } });
+// `reason` is an optional free-text change note (Monetization Master Change
+// Directive v1.0 §15) recorded on the resulting audit entry -- omit it and
+// nothing changes from before.
+export const updatePricingSettings = <T = unknown>(key: string, value: T, reason?: string) =>
+  apiFetch<T>(`/api/admin/pricing/settings/${key}`, { method: "PUT", body: reason ? { value, reason } : { value } });
 
 // ---- Testimonials ----
 export interface BackendTestimonial { id:number; nameAr:string; nameEn:string|null; roleAr:string; roleEn:string|null; quoteAr:string; quoteEn:string|null; rating:number; imageSrc:string|null; displayOrder:number; active:boolean; createdAt:string; updatedAt:string; }
@@ -432,7 +439,7 @@ export const updateContactInfo = (input: ContactWritePayload) => apiFetch<Backen
 export const deleteContactInfo = () => apiFetch<BackendContactInfo>("/api/admin/contact", { method:"DELETE" });
 
 // ---- Audit Log ----
-export interface BackendAuditEntry { id:number; actor:{id:string;name:string}; action:string; resourceType:string; resourceId:string; resourceLabel:string; newValue?:string; timestamp:string; result:"success"|"failure"; }
+export interface BackendAuditEntry { id:number; actor:{id:string;name:string}; action:string; resourceType:string; resourceId:string; resourceLabel:string; previousValue?:string; newValue?:string; reason?:string; timestamp:string; result:"success"|"failure"; }
 export const fetchAuditLog = () => apiFetch<BackendAuditEntry[]>("/api/admin/audit");
 
 // ---- Notifications ----
@@ -465,7 +472,18 @@ export const updatePageSection = (slug:string, id:number, input: SectionWritePay
 export const deletePageSection = (slug:string, id:number) => apiFetch<{id:number}>(`/api/admin/pages/${slug}/sections/${id}`, { method:"DELETE" });
 
 // ---- Media ----
-export interface BackendMediaUsage { id:number; route:string|null; routeTitleAr:string|null; routeTitleEn:string|null; section:string; }
+export interface BackendMediaUsage {
+  id: number | null;
+  kind: "page" | "article";
+  route: string | null;
+  routeTitleAr: string | null;
+  routeTitleEn: string | null;
+  section: string;
+  articleId?: number;
+  locale?: ArticleLocale;
+  articleTitle?: string;
+  articleStatus?: BackendArticleStatus;
+}
 export interface BackendMedia { id:number; filename:string; url:string; mimeType:string; sizeKb:number; width:number|null; height:number|null; altAr:string; altEn:string; uploadedBy:string|null; createdAt:string; updatedAt:string; usedIn: BackendMediaUsage[]; }
 export type MediaUploadPayload = { filename:string; dataUrl:string; altAr:string; altEn:string; width?:number; height?:number; route:string; section:string; };
 export type MediaMetaPayload = { altAr:string; altEn:string; };
@@ -478,3 +496,109 @@ export const replaceMedia = (id:number, input: MediaReplacePayload) => apiFetch<
 export const deleteMedia = (id:number) => apiFetch<{id:number}>(`/api/admin/media/${id}`, { method:"DELETE" });
 export const removeMediaUsage = (mediaId:number, usageId:number) => apiFetch<BackendMedia>(`/api/admin/media/${mediaId}/usage/${usageId}`, { method:"DELETE" });
 export const reassignMediaUsage = (mediaId:number, usageId:number, newMediaId:number) => apiFetch<BackendMedia>(`/api/admin/media/${mediaId}/usage/${usageId}`, { method:"PUT", body:{ mediaId:newMediaId } });
+
+/**
+ * Real multipart file upload (Article covers / general Library use) -- see
+ * POST /api/admin/media/upload. Distinct from createMedia() above, which
+ * still sends a base64 JSON payload for the Pages module's original,
+ * placement-required flow (UploadModal); this one is a raw Library upload,
+ * with no route/section requirement, and results in a real on-disk file.
+ * Reimplements apiFetch's auth/401-handling/error-shape inline (rather than
+ * calling it) only because a FormData body can't be JSON.stringify'd and
+ * must not carry a "Content-Type: application/json" header -- the browser
+ * needs to set its own multipart boundary.
+ */
+export function uploadMediaFile(
+  file: File,
+  meta: { altAr?: string; altEn?: string } = {},
+  onProgress?: (percent: number) => void,
+): Promise<BackendMedia> {
+  const form = new FormData();
+  form.append("file", file);
+  if (meta.altAr) form.append("altAr", meta.altAr);
+  if (meta.altEn) form.append("altEn", meta.altEn);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_BASE_URL}/api/admin/media/upload`);
+    const token = getToken();
+    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+    }
+
+    xhr.onload = () => {
+      let json: ApiSuccess<BackendMedia> | ApiFailure | null = null;
+      try {
+        json = JSON.parse(xhr.responseText);
+      } catch {
+        json = null;
+      }
+      if (xhr.status >= 200 && xhr.status < 300 && json && json.success) {
+        resolve(json.data);
+        return;
+      }
+      if (xhr.status === 401 && typeof window !== "undefined") {
+        clearStoredSession();
+        try {
+          window.sessionStorage.setItem(SESSION_EXPIRED_FLAG, "1");
+        } catch {
+          // Storage can be unavailable -- the redirect below still happens.
+        }
+      }
+      const message = json && "message" in json ? json.message : currentLang() === "ar" ? "تعذر رفع الملف" : "Couldn't upload the file";
+      const errorCode = json && "error_code" in json ? json.error_code : "UNKNOWN_ERROR";
+      reject(new ApiError(xhr.status, errorCode, message));
+    };
+    xhr.onerror = () => {
+      reject(
+        new ApiError(
+          0,
+          "NETWORK_ERROR",
+          currentLang() === "ar" ? "تعذّر الاتصال بالخادم — تأكد من تشغيل الـ backend" : "Couldn't reach the server — make sure the backend is running",
+        ),
+      );
+    };
+    xhr.send(form);
+  });
+}
+
+// ---- Company Requests ("Potential Clients") — Website /register form ----
+export type CompanyRequestStatus = "new" | "contacted" | "closed";
+export interface BackendCompanyRequest {
+  id: number;
+  tradeName: string;
+  crNumber: string;
+  businessActivity: "retail" | "wholesale" | "importer" | "workshop";
+  contactName: string;
+  city: string | null;
+  contactEmail: string;
+  contactPhone: string;
+  status: CompanyRequestStatus;
+  adminNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+export const fetchCompanyRequests = () => apiFetch<BackendCompanyRequest[]>("/api/admin/company-requests");
+export const updateCompanyRequestStatus = (id: number, status: CompanyRequestStatus, adminNote?: string) =>
+  apiFetch<BackendCompanyRequest>(`/api/admin/company-requests/${id}/status`, { method: "PATCH", body: { status, adminNote } });
+
+// ---- Contact Messages ("Contact Requests") — Website /contact form ----
+export type ContactMessageStatus = "new" | "read" | "replied";
+export interface BackendContactMessage {
+  id: number;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  inquiryType: "sales" | "support" | "partnership" | "press" | "other";
+  message: string;
+  status: ContactMessageStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+export const fetchContactMessages = () => apiFetch<BackendContactMessage[]>("/api/admin/contact-messages");
+export const updateContactMessageStatus = (id: number, status: ContactMessageStatus) =>
+  apiFetch<BackendContactMessage>(`/api/admin/contact-messages/${id}/status`, { method: "PATCH", body: { status } });

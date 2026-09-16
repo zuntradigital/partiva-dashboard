@@ -24,7 +24,9 @@ export type Resource =
   | "media_delete"
   | "seo"
   | "roles_permissions"
-  | "audit_log";
+  | "audit_log"
+  | "company_requests"
+  | "contact_messages";
 
 export type Action =
   | "view"

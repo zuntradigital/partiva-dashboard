@@ -6,8 +6,9 @@ import { Icon } from "@/components/icons";
 import { useSession } from "@/lib/session";
 import { useLanguage } from "@/lib/i18n";
 import { MediaCard } from "@/components/media/MediaCard";
-import { MediaDetailModal, type MediaItem } from "@/components/media/MediaDetailModal";
+import { MediaDetailModal } from "@/components/media/MediaDetailModal";
 import { UploadModal } from "@/components/media/UploadModal";
+import { toMediaItem } from "@/lib/media";
 import {
   fetchMedia,
   createMedia,
@@ -19,49 +20,6 @@ import {
   ApiError,
   type BackendMedia,
 } from "@/lib/api";
-
-// The Website's origin -- legacy media rows store a Website-relative path
-// (e.g. "/images/logo.png", served from the Website's own public folder), so
-// it must be resolved against the Website, not this Dashboard's own origin,
-// or the <img> 404s. New uploads are self-contained base64 data URLs and
-// already work from any origin. Same env var the Sidebar logo uses.
-const WEBSITE_URL = process.env.NEXT_PUBLIC_WEBSITE_URL || "http://localhost:3002";
-function resolveMediaUrl(url: string): string {
-  return url.startsWith("/") ? `${WEBSITE_URL}${url}` : url;
-}
-
-// Section labels for the site's known usage locations -- unrecognized keys
-// (e.g. a future section) fall back to the raw key instead of disappearing.
-const SECTION_LABEL_KEYS: Record<string, string> = {
-  hero: "media.sectionHero",
-  cta: "media.sectionCta",
-  navbar: "media.sectionNavbar",
-  footer: "media.sectionFooter",
-  "article-cover-watermark": "media.sectionArticleWatermark",
-  main: "media.sectionMain",
-};
-
-function toMediaItem(m: BackendMedia, t: (key: string, vars?: Record<string, string | number>) => string): MediaItem {
-  return {
-    id: String(m.id),
-    filename: m.filename,
-    mimeType: m.mimeType,
-    sizeKB: m.sizeKb,
-    width: m.width ?? 0,
-    height: m.height ?? 0,
-    altText: { ar: m.altAr, en: m.altEn },
-    uploaderName: m.uploadedBy ?? "—",
-    uploadedAt: m.createdAt,
-    usedIn: m.usedIn.map((u) => ({
-      type: u.route ? "page" : "global",
-      id: u.route ?? "global",
-      usageId: u.id,
-      label: `${u.route ? (u.routeTitleAr ?? u.route) : t("media.globalUsage")} — ${SECTION_LABEL_KEYS[u.section] ? t(SECTION_LABEL_KEYS[u.section]!) : u.section}`,
-    })),
-    accentColor: "linear-gradient(135deg,#4f6df5,#8b5cf6)",
-    objectUrl: resolveMediaUrl(m.url),
-  };
-}
 
 type UsageFilter = "all" | "used" | "unused";
 

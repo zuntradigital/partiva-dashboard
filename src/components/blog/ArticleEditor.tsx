@@ -25,6 +25,7 @@ import { SeoEditor } from "@/components/shared/SeoEditor";
 import { PreviewModal } from "@/components/shared/PreviewModal";
 import { RejectModal } from "@/components/shared/RejectModal";
 import { ArticleContentEditor } from "@/components/blog/ArticleContentEditor";
+import { ArticleCoverField } from "@/components/blog/ArticleCoverField";
 import { useSession } from "@/lib/session";
 import { useToast } from "@/lib/useToast";
 import { useLanguage } from "@/lib/i18n";
@@ -77,6 +78,9 @@ interface EditableTranslation {
   coverAlt: string;
   coverWidth: number;
   coverHeight: number;
+  /** Set when the cover is a Media Library asset (upload or reuse) -- null
+   * for a legacy cover that only ever had a raw src. See ArticleCoverField. */
+  coverMediaId: number | null;
   seo: ArticleSeo;
   translationStatus: "not_started" | "in_progress" | "complete";
 }
@@ -90,6 +94,7 @@ const EMPTY_TRANSLATION: EditableTranslation = {
   coverAlt: "",
   coverWidth: 1200,
   coverHeight: 800,
+  coverMediaId: null,
   seo: { ...EMPTY_SEO },
   translationStatus: "not_started",
 };
@@ -124,6 +129,7 @@ function fromBackend(article: BackendArticle): EditableArticle {
       coverAlt: t.cover?.alt ?? "",
       coverWidth: t.cover?.width ?? 1200,
       coverHeight: t.cover?.height ?? 800,
+      coverMediaId: t.cover?.mediaId ?? null,
       seo: t.seo,
       translationStatus: article.translationStatus[locale],
     };
@@ -196,7 +202,7 @@ function toPayload(state: EditableArticle): api.ArticleWritePayload {
       slug: t.slug,
       excerpt: t.excerpt,
       content: t.content,
-      cover: t.coverSrc ? { src: t.coverSrc, alt: t.coverAlt, width: t.coverWidth, height: t.coverHeight } : null,
+      cover: t.coverSrc ? { src: t.coverSrc, alt: t.coverAlt, width: t.coverWidth, height: t.coverHeight, mediaId: t.coverMediaId } : null,
       readingTimeMinutes: estimateReadingMinutes(t.content),
       seo: t.seo,
       translationStatus: t.translationStatus,
@@ -300,19 +306,6 @@ export function ArticleEditor({
         [locale]: { ...(s.translations[locale] ?? EMPTY_TRANSLATION), ...patch, translationStatus: "in_progress" },
       },
     }));
-  }
-
-  function handleCoverUpload(file?: File) {
-    if (!file?.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const src = String(reader.result);
-      const image = new Image();
-      image.onload = () => updateTranslation({ coverSrc: src, coverWidth: image.width, coverHeight: image.height });
-      image.onerror = () => updateTranslation({ coverSrc: src });
-      image.src = src;
-    };
-    reader.readAsDataURL(file);
   }
 
   function startTranslation() {
@@ -544,28 +537,26 @@ export function ArticleEditor({
                   <CardHeader>
                     <CardTitle>{t("editor.coverImageTitle")}</CardTitle>
                   </CardHeader>
-                  <div className="grid grid-cols-1 gap-4 p-5 pt-3 sm:grid-cols-2">
-                    <Field label={t("editor.uploadImage")} htmlFor="article-cover-upload">
-                      <input
-                        id="article-cover-upload"
-                        type="file"
-                        accept="image/*"
-                        disabled={!canEdit}
-                        onChange={(event) => {
-                          handleCoverUpload(event.target.files?.[0]);
-                          event.currentTarget.value = "";
-                        }}
-                        className="block w-full text-sm text-muted file:me-3 file:rounded-lg file:border-0 file:bg-surface-hover file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground hover:file:bg-border-soft"
-                      />
-                    </Field>
-                    <Field label={t("editor.altLabel")} htmlFor="article-cover-alt">
-                      <Input id="article-cover-alt" disabled={!canEdit} value={translation.coverAlt} onChange={(e) => updateTranslation({ coverAlt: e.target.value })} />
-                    </Field>
-                    {translation.coverSrc && (
-                      <div className="sm:col-span-2 overflow-hidden rounded-xl border border-border-soft bg-background-soft">
-                        <img src={translation.coverSrc} alt={translation.coverAlt || t("editor.coverPreviewAlt")} className="max-h-64 w-full object-cover" />
-                      </div>
-                    )}
+                  <div className="p-5 pt-3">
+                    <ArticleCoverField
+                      disabled={!canEdit}
+                      value={{
+                        src: translation.coverSrc,
+                        alt: translation.coverAlt,
+                        width: translation.coverWidth,
+                        height: translation.coverHeight,
+                        mediaId: translation.coverMediaId,
+                      }}
+                      onChange={(cover) =>
+                        updateTranslation({
+                          coverSrc: cover.src,
+                          coverAlt: cover.alt,
+                          coverWidth: cover.width,
+                          coverHeight: cover.height,
+                          coverMediaId: cover.mediaId,
+                        })
+                      }
+                    />
                   </div>
                 </Card>
               </>

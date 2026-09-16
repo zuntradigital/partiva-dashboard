@@ -18,6 +18,8 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/testimonials", label: "آراء العملاء", labelEn: "Testimonials", icon: "testimonials", resource: "testimonials" },
   { href: "/media", label: "مكتبة الوسائط", labelEn: "Media Library", icon: "media", resource: "media" },
   { href: "/contact", label: "معلومات التواصل", labelEn: "Contact Info", icon: "contact", resource: "contact_info" },
+  { href: "/potential-clients", label: "العملاء المحتملون", labelEn: "Potential Clients", icon: "users", resource: "company_requests" },
+  { href: "/contact-requests", label: "طلبات التواصل", labelEn: "Contact Requests", icon: "send", resource: "contact_messages" },
 ];
 
 export const NAV_ITEMS_SECONDARY: NavItem[] = [

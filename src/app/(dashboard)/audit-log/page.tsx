@@ -160,6 +160,7 @@ export default function AuditLogPage() {
                       ) : (
                         <p className="break-words">{entry.newValue}</p>
                       )}
+                      {entry.reason && <p className="mt-1 break-words italic text-muted-soft">{t("auditLog.reasonPrefix")} {entry.reason}</p>}
                     </div>
                   )}
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs text-muted-soft">
@@ -212,6 +213,11 @@ export default function AuditLogPage() {
                           </p>
                         ) : (
                           "—"
+                        )}
+                        {entry.reason && (
+                          <p className="truncate text-[11px] italic text-muted-soft" title={entry.reason}>
+                            {t("auditLog.reasonPrefix")} {entry.reason}
+                          </p>
                         )}
                       </TD>
                       <TD className="truncate">

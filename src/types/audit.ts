@@ -25,6 +25,7 @@ export interface AuditLogEntry {
   resourceLabel: string;
   previousValue?: string;
   newValue?: string;
+  reason?: string;
   timestamp: string;
   result: "success" | "failure";
   ip?: string;
