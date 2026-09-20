@@ -37,14 +37,12 @@ export function MediaDetailModal({
   const [altAr, setAltAr] = useState(asset.altText.ar);
   const [altEn, setAltEn] = useState(asset.altText.en);
   const [imageFailed, setImageFailed] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [removingUsage, setRemovingUsage] = useState<MediaUsageRef | null>(null);
   const [replacingUsageId, setReplacingUsageId] = useState<number | null>(null);
   const [replaceTarget, setReplaceTarget] = useState("");
   const replaceRef = useRef<HTMLInputElement>(null);
 
   const dirty = altAr !== asset.altText.ar || altEn !== asset.altText.en;
-  const inUse = asset.usedIn.length > 0;
 
   return (
     <>
@@ -190,28 +188,14 @@ export function MediaDetailModal({
 
             {canDelete && (
               <div>
-                <Button variant="danger" size="sm" disabled={inUse} onClick={() => setConfirmDelete(true)}>
+                <Button variant="danger" size="sm" onClick={() => onDelete(asset.id)}>
                   <Icon name="trash" className="h-4 w-4" /> {t("mediaModal.deleteAsset")}
                 </Button>
-                {inUse && <p className="mt-1.5 text-xs text-muted-soft">{t("mediaModal.deleteBlockedByUsage")}</p>}
               </div>
             )}
           </div>
         </div>
       </Modal>
-
-      <ConfirmDialog
-        open={confirmDelete}
-        onClose={() => setConfirmDelete(false)}
-        onConfirm={() => {
-          onDelete(asset.id);
-          onClose();
-        }}
-        title={t("mediaModal.deleteConfirmTitle")}
-        description={t("mediaModal.deleteConfirmDesc")}
-        confirmLabel={t("mediaModal.deleteConfirmLabel")}
-        variant="danger"
-      />
 
       <ConfirmDialog
         open={removingUsage !== null}

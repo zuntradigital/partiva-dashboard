@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { PageHeader, Card, SearchInput, Select, Field, Button, EmptyState, Skeleton } from "@/components/ui";
+import { PageHeader, Card, SearchInput, Select, Field, Button, EmptyState, Skeleton, ConfirmDialog, ToastViewport } from "@/components/ui";
 import { Icon } from "@/components/icons";
 import { useSession } from "@/lib/session";
 import { useLanguage } from "@/lib/i18n";
+import { useToast } from "@/lib/useToast";
 import { MediaCard } from "@/components/media/MediaCard";
 import { MediaDetailModal } from "@/components/media/MediaDetailModal";
 import { UploadModal } from "@/components/media/UploadModal";
@@ -33,6 +34,9 @@ export default function MediaLibraryPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { toasts, showToast, dismissToast } = useToast();
 
   const canEdit = can("media", "edit") || can("media", "create");
   const canDelete = can("media", "delete");
@@ -59,6 +63,30 @@ export default function MediaLibraryPage() {
   );
 
   const selected = assets.find((a) => a.id === selectedId) ?? null;
+  const deleteTarget = assets.find((a) => a.id === deleteTargetId) ?? null;
+
+  // Real deletion via the API (row + references + stored file are handled
+  // server-side). The list is only updated after the server confirms; on
+  // failure the item stays exactly where it was and an error toast is shown.
+  const confirmDelete = async () => {
+    if (!deleteTarget || deleting) return;
+    const target = deleteTarget;
+    setDeleting(true);
+    setActionError(null);
+    try {
+      const result = await deleteMedia(Number(target.id));
+      setMedia((prev) => (prev ?? []).filter((m) => String(m.id) !== target.id));
+      if (selectedId === target.id) setSelectedId(null);
+      showToast("success", result.articlesArchived > 0 ? t("media.deleteSuccessArchived", { count: result.articlesArchived }) : t("media.deleteSuccess"));
+      // Re-sync so any usage shown elsewhere in the library reflects the server's state.
+      void fetchMedia().then(setMedia).catch(() => {});
+    } catch (e) {
+      showToast("danger", e instanceof ApiError ? e.message : t("media.deleteAssetError"));
+    } finally {
+      setDeleting(false);
+      setDeleteTargetId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -106,7 +134,7 @@ export default function MediaLibraryPage() {
         ) : (
           <div className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {filtered.map((asset) => (
-              <MediaCard key={asset.id} asset={asset} onClick={() => setSelectedId(asset.id)} />
+              <MediaCard key={asset.id} asset={asset} onClick={() => setSelectedId(asset.id)} onDelete={canDelete ? () => setDeleteTargetId(asset.id) : undefined} />
             ))}
           </div>
         )}
@@ -153,17 +181,24 @@ export default function MediaLibraryPage() {
             };
             reader.readAsDataURL(file);
           }}
-          onDelete={(id) => {
-            setActionError(null);
-            void deleteMedia(Number(id))
-              .then(() => {
-                setMedia((prev) => (prev ?? []).filter((m) => String(m.id) !== id));
-                setSelectedId(null);
-              })
-              .catch((e) => setActionError(e instanceof ApiError ? e.message : t("media.deleteAssetError")));
-          }}
+          onDelete={(id) => setDeleteTargetId(id)}
         />
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTargetId(null)}
+        onConfirm={() => void confirmDelete()}
+        title={t("mediaModal.deleteConfirmTitle")}
+        description={
+          deleteTarget && deleteTarget.usedIn.length > 0
+            ? t("media.deleteConfirmUsedDesc", { places: deleteTarget.usedIn.map((u) => u.label).join("، ") })
+            : t("mediaModal.deleteConfirmDesc")
+        }
+        confirmLabel={t("mediaModal.deleteConfirmLabel")}
+        variant="danger"
+      />
+      <ToastViewport toasts={toasts} onDismiss={dismissToast} />
 
       <UploadModal
         open={uploadOpen}

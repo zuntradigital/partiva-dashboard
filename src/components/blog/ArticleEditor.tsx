@@ -283,6 +283,8 @@ export function ArticleEditor({
           if (currentId === null) {
             setArticleId(result.id);
             router.replace(`/blog/${result.id}`, { scroll: false });
+          } else {
+            setStatus(result.status);
           }
         })
         .catch(() => {

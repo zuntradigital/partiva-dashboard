@@ -2,18 +2,17 @@
 
 import { useState } from "react";
 import { Badge } from "@/components/ui";
+import { Icon } from "@/components/icons";
 import { useLanguage } from "@/lib/i18n";
 import type { MediaItem } from "./MediaDetailModal";
 
-export function MediaCard({ asset, onClick }: { asset: MediaItem; onClick: () => void }) {
+export function MediaCard({ asset, onClick, onDelete }: { asset: MediaItem; onClick: () => void; onDelete?: () => void }) {
   const { t } = useLanguage();
   const [failed, setFailed] = useState(false);
 
   return (
-    <button
-      onClick={onClick}
-      className="group overflow-hidden rounded-2xl border border-border bg-surface text-start transition-colors hover:border-primary/50"
-    >
+    <div className="group relative overflow-hidden rounded-2xl border border-border bg-surface transition-colors hover:border-primary/50">
+    <button onClick={onClick} className="block w-full text-start">
       <div className="relative aspect-square w-full overflow-hidden">
         {asset.objectUrl && !failed ? (
           <img
@@ -38,5 +37,17 @@ export function MediaCard({ asset, onClick }: { asset: MediaItem; onClick: () =>
         </p>
       </div>
     </button>
+    {onDelete && (
+      <button
+        type="button"
+        onClick={onDelete}
+        aria-label={t("media.deleteCardLabel", { name: asset.filename })}
+        title={t("mediaModal.deleteAsset")}
+        className="absolute start-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-surface/90 text-danger shadow-sm ring-1 ring-border transition-opacity hover:bg-danger hover:text-white focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-danger sm:opacity-0 sm:group-hover:opacity-100"
+      >
+        <Icon name="trash" className="h-4 w-4" />
+      </button>
+    )}
+    </div>
   );
 }

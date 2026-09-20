@@ -493,7 +493,8 @@ export const fetchMedia = () => apiFetch<BackendMedia[]>("/api/admin/media");
 export const createMedia = (input: MediaUploadPayload) => apiFetch<BackendMedia>("/api/admin/media", { method:"POST", body:input });
 export const updateMediaMeta = (id:number, input: MediaMetaPayload) => apiFetch<BackendMedia>(`/api/admin/media/${id}`, { method:"PUT", body:input });
 export const replaceMedia = (id:number, input: MediaReplacePayload) => apiFetch<BackendMedia>(`/api/admin/media/${id}/replace`, { method:"PUT", body:input });
-export const deleteMedia = (id:number) => apiFetch<{id:number}>(`/api/admin/media/${id}`, { method:"DELETE" });
+/** Never blocked by usage: the image is removed from every article that used it (those articles are moved to Archived) and from page placements. */
+export const deleteMedia = (id:number) => apiFetch<{id:number; removedUsages:number; articleImagesRemoved:number; articlesArchived:number}>(`/api/admin/media/${id}`, { method:"DELETE" });
 export const removeMediaUsage = (mediaId:number, usageId:number) => apiFetch<BackendMedia>(`/api/admin/media/${mediaId}/usage/${usageId}`, { method:"DELETE" });
 export const reassignMediaUsage = (mediaId:number, usageId:number, newMediaId:number) => apiFetch<BackendMedia>(`/api/admin/media/${mediaId}/usage/${usageId}`, { method:"PUT", body:{ mediaId:newMediaId } });
 

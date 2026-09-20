@@ -43,7 +43,7 @@ function NavLink({ item, active, lang, onNavigate }: { item: NavItem; active: bo
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { can } = useSession();
-  const { lang, t } = useLanguage();
+  const { lang } = useLanguage();
 
   const visiblePrimary = NAV_ITEMS.filter((item) => !item.resource || can(item.resource, "view"));
   const visibleSecondary = NAV_ITEMS_SECONDARY.filter((item) => !item.resource || can(item.resource, "view"));
@@ -56,7 +56,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-3">
         {visiblePrimary.map((item) => (
           <NavLink key={item.href} item={item} active={isActive(pathname, item.href)} lang={lang} onNavigate={onNavigate} />
         ))}
@@ -71,10 +71,6 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         )}
       </nav>
 
-      <div className="m-3 rounded-2xl border border-border bg-gradient-to-br from-surface-hover to-surface p-4">
-        <p className="text-xs font-semibold text-foreground">{t("sidebar.helpTitle")}</p>
-        <p className="mt-1 text-xs leading-relaxed text-muted">{t("sidebar.helpBody")}</p>
-      </div>
     </div>
   );
 }

@@ -68,13 +68,6 @@ const dict = {
     darkMode: { ar: "الوضع الداكن", en: "Dark mode" },
     switchLanguage: { ar: "English", en: "العربية" },
   },
-  sidebar: {
-    helpTitle: { ar: "تحتاج مساعدة؟", en: "Need help?" },
-    helpBody: {
-      ar: "راجع دليل استخدام لوحة التحكم للتعرف على مسار النشر والصلاحيات.",
-      en: "Check the Dashboard guide to learn the publishing flow and permissions.",
-    },
-  },
   home: {
     greeting: { ar: "مرحبًا بك، {{name}} 👋", en: "Welcome, {{name}} 👋" },
     description: {
@@ -355,6 +348,16 @@ const dict = {
     removeUsageError: { ar: "تعذر إزالة هذا الاستخدام", en: "Couldn't remove this usage" },
     replaceUsageError: { ar: "تعذر استبدال هذا الاستخدام", en: "Couldn't replace this usage" },
     deleteAssetError: { ar: "تعذر حذف الأصل", en: "Couldn't delete the asset" },
+    deleteSuccess: { ar: "تم حذف الصورة نهائيًا", en: "Image deleted permanently" },
+    deleteSuccessArchived: {
+      ar: "تم حذف الصورة نهائيًا. تم نقل {{count}} مقال(ات) إلى الأرشيف لأنها بلا صورة.",
+      en: "Image deleted permanently. {{count}} article(s) without an image were moved to Archived.",
+    },
+    deleteCardLabel: { ar: "حذف {{name}}", en: "Delete {{name}}" },
+    deleteConfirmUsedDesc: {
+      ar: "هذه الصورة مستخدمة في: {{places}}. سيتم حذفها من هذه الأماكن وحذف الملف نهائيًا. أي مقال يفقد صورته ينتقل تلقائيًا إلى الأرشيف (يبقى محتواه كما هو)، ويعود إلى حالته السابقة عند إضافة صورة جديدة له. الصفحات تعود إلى صورتها الافتراضية. لا يمكن التراجع عن ذلك.",
+      en: "This image is used in: {{places}}. It will be removed from those places and the file deleted permanently. Any article that loses its image is moved to Archived automatically (its content is kept) and returns to its previous status once a new image is added. Pages fall back to their default image. This cannot be undone.",
+    },
     uploadError: { ar: "تعذر رفع الملف", en: "Couldn't upload the file" },
     globalUsage: { ar: "عام", en: "Global" },
     sectionHero: { ar: "قسم البطل (Hero)", en: "Hero section" },
@@ -405,9 +408,8 @@ const dict = {
     confirm: { ar: "تأكيد", en: "Confirm" },
     cancel: { ar: "إلغاء", en: "Cancel" },
     deleteAsset: { ar: "حذف الأصل", en: "Delete asset" },
-    deleteBlockedByUsage: { ar: "أزل جميع الاستخدامات أعلاه أولًا لتتمكن من حذف هذا الأصل.", en: "Remove all usages above first before you can delete this asset." },
     deleteConfirmTitle: { ar: "حذف الأصل", en: "Delete asset" },
-    deleteConfirmDesc: { ar: "لا يمكن التراجع عن هذا الإجراء بعد التأكيد.", en: "This action cannot be undone once confirmed." },
+    deleteConfirmDesc: { ar: "سيتم حذف الصورة وملفها من التخزين نهائيًا. لا يمكن التراجع عن هذا الإجراء بعد التأكيد.", en: "The image and its stored file will be deleted permanently. This cannot be undone once confirmed." },
     deleteConfirmLabel: { ar: "حذف نهائيًا", en: "Delete permanently" },
     removeUsageConfirmTitle: { ar: "إزالة الاستخدام", en: "Remove usage" },
     removeUsageConfirmDesc: {
