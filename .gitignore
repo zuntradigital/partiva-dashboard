@@ -44,3 +44,8 @@ next-env.d.ts
 # IDE
 .vscode/
 .idea/
+
+# Local AI/dev-assistant tooling (never part of the app build or deployment)
+.claude/
+CLAUDE.md
+AGENTS.md
