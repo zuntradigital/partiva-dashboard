@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  // Stop `next dev` from generating AGENTS.md / CLAUDE.md (AI-assistant files, not part of the app).
+  agentRules: false,
   async headers() {
     return [
       {
